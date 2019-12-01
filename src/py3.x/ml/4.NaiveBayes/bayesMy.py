@@ -224,6 +224,7 @@ def testingNB():
     print(testEntry, 'classed as :', classifyNB(thisDoc, p0V, p1V, pAb))
 
 
+
 def textParse(bigString):
     import re
     listOfTokens = re.split(r'\W+', bigString)
