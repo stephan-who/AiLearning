@@ -301,10 +301,8 @@ def spam_test():
 # ----- 项目案例3: 使用朴素贝叶斯从个人广告中获取区域倾向 ------
 # 其中有几个函数上面都写过了，没必要再写一遍了，所以删了
 
-
-
+#RSS源分类器及高频词去除函数
 def calc_most_freq(vocab_list, full_text):
-    # RSS源分类器及高频词去除函数
     from operator import itemgetter
     freq_dict = {}
     for token in vocab_list:
@@ -312,41 +310,38 @@ def calc_most_freq(vocab_list, full_text):
     sorted_freq = sorted(freq_dict.items(), key=itemgetter(1), reverse=True)
     return sorted_freq[0:30]
 
-
 def local_words(feed1, feed0):
-    # import feedparser # 其实呢，这一行没用到，最好删了
-    # 下面操作和上面那个 spam_test函数基本一样，理解了一个，两个都ok
     doc_list = []
     class_list = []
     full_text = []
-    # 找出两个中最小的一个
-    min_len = min(len(feed0), len(feed1))
+    print(feed0)
+    print(feed1)
+    min_len = min(len(feed0['entries']), len(feed1['entries']))
     for i in range(min_len):
-        # 类别　１
+        # Class 1
         word_list = text_parse(feed1['entries'][i]['summary'])
+        print(word_list)
         doc_list.append(word_list)
         full_text.extend(word_list)
         class_list.append(1)
-        # 类别　０
+        # Class 0
         word_list = text_parse(feed0['entries'][i]['summary'])
         doc_list.append(word_list)
         full_text.extend(word_list)
         class_list.append(0)
     vocab_list = create_vocab_list(doc_list)
     # 去掉高频词
-    top30words = calc_most_freq(vocab_list, full_text)
+    top30words= calc_most_freq(vocab_list, full_text)
     for pair in top30words:
         if pair[0] in vocab_list:
             vocab_list.remove(pair[0])
-    # 获取训练数据和测试数据
 
+    #获取训练数据和测试数据
     import random
-    # 生成随机取10个数, 为了避免警告将每个数都转换为整型
+    print(min_len)
     test_set = [int(num) for num in random.sample(range(2 * min_len), 20)]
-    # 并在原来的training_set中去掉这10个数
     training_set = list(set(range(2 * min_len)) - set(test_set))
 
-    # 把这些训练集和测试集变成向量的形式
     training_mat = []
     training_class = []
     for doc_index in training_set:
@@ -360,28 +355,25 @@ def local_words(feed1, feed0):
     for doc_index in test_set:
         word_vec = bag_words2vec(vocab_list, doc_list[doc_index])
         if classify_naive_bayes(
-                np.array(word_vec),
-                p0v,
-                p1v,
-                p_spam
+            np.array(word_vec),
+            p0v,
+            p1v,
+            p_spam
         ) != class_list[doc_index]:
             error_count += 1
     print("the error rate is {}".format(error_count / len(test_set)))
     return vocab_list, p0v, p1v
 
-
 def test_rss():
     import feedparser
-    ny = feedparser.parse('http://newyork.craigslist.org/stp/index.rss')
-    sf = feedparser.parse('http://sfbay.craigslist.org/stp/index.rss')
-    vocab_list, p_sf, p_nf = local_words(ny, sf)
-    # 返回值都没用上，可以用_, _, _代替
-
+    ny = feedparser.parse('https://newyork.craigslist.org/search/res?format=rss')
+    sf = feedparser.parse('https://sfbay.craigslist.org/search/apa?format=rss')
+    _, _, _ = local_words(ny, sf)
 
 def get_top_words():
     import feedparser
-    ny = feedparser.parse('http://newyork.craigslist.org/stp/index.rss')
-    sf = feedparser.parse('http://sfbay.craigslist.org/stp/index.rss')
+    ny = feedparser.parse('https://newyork.craigslist.org/search/res?format=rss')
+    sf = feedparser.parse('https://sfbay.craigslist.org/search/apa?format=rss')
     vocab_list, p_sf, p_ny = local_words(ny, sf)
     top_ny = []
     top_sf = []
@@ -392,16 +384,15 @@ def get_top_words():
             top_ny.append((vocab_list[i], p_ny[i]))
     sorted_sf = sorted(top_sf, key=lambda pair: pair[1], reverse=True)
     sorted_ny = sorted(top_ny, key=lambda pair: pair[1], reverse=True)
-    print('\n----------- this is SF ---------------\n')
+    print('\n -----------------------------this is SF --------------\n')
     for item in sorted_sf:
         print(item[0])
     print('\n----------- this is NY ---------------\n')
     for item in sorted_ny:
         print(item[0])
 
-
 if __name__ == "__main__":
     # testing_naive_bayes()
-    spam_test()
+    # spam_test()
     # test_rss()
-    # get_top_words()
+    get_top_words()
