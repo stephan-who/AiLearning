@@ -124,3 +124,49 @@ def createTree(dataSet, labels):
 
     return myTree
 
+def classify(inputTree, featLabels, testVec):
+    firstStr = list(inputTree.keys())[0]
+    secondDict = inputTree[firstStr]
+    featIndex = featLabels.index(firstStr)
+
+    key = testVec[featIndex]
+    valueOfFeat = secondDict[key]
+    print('+++')
+    if isinstance(valueOfFeat, dict):
+        classLabel = classify(valueOfFeat, featLabels, testVec)
+    else:
+        classLabel = valueOfFeat
+    return classLabel
+
+def storeTree(inputTree, filename):
+    import pickle
+    fw = open(filename, 'wb')
+    pickle.dump(inputTree, fw)
+    fw.close()
+    # with open(filename, 'wb') as fw:
+    #     pickle.dump(inputTree, fw)
+
+def grabTree(filename):
+    import pickle
+    fr = open(filename, 'rb')
+    return pickle.load(fr)
+
+def fishTest():
+    myDat, labels = createDataSet()
+
+    import copy
+    myTree = createTree(myDat, copy.deepcopy(labels))
+    print(myTree)
+    print(classify(myTree, labels, [1, 1]))
+    dtPlot.createPlot(myTree)
+
+
+def ContactLensesTest():
+    fr = open('data/3.DecisionTree/lenses.txt')
+    lenses = [inst.strip().split('\t') for inst in fr.readlines()]
+    lensesLabels = ['age', 'prescript', 'astigmatic', 'tearRate']
+    lensesTree = createTree(lenses, lensesLabels)
+    print(lensesTree)
+    dtPlot.createPlot(lensesTree)
+
+ContactLensesTest()
