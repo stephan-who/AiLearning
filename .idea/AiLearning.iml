@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/py3.x/ml/3.DecisionTree" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/data-master" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.6 (common)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.6" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
   <component name="TestRunnerService">
