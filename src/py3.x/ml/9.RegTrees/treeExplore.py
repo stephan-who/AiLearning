@@ -9,7 +9,7 @@ Aauthor: Peter/片刻
 GitHub:  https://github.com/apachecn/AiLearning
 '''
 import regTrees
-from Tkinter import *
+from tkinter import *
 from numpy import *
 
 import matplotlib
