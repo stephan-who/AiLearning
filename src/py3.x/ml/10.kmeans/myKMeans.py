@@ -38,11 +38,12 @@ def randCent(dataMat, k):
 
 def kMeans(dataMat, k, distMeas=distEclud, createCent=randCent):
     m, n = shape(dataMat)
+    # clusterAssment包含两个列:一列记录簇索引值,第二列存储误差
     clusterAssment = mat(zeros((m, 2)))
     centroids = createCent(dataMat, k)
-
     clusterChanged = True
     while clusterChanged:
+        clusterChanged = False
         for i in range(m):
             minDist = inf
             minIndex = -1
@@ -54,10 +55,14 @@ def kMeans(dataMat, k, distMeas=distEclud, createCent=randCent):
             if clusterAssment[i, 0] != minIndex:
                 clusterChanged = True
             clusterAssment[i, :] = minIndex, minDist ** 2
+        # 遍历所有质心并更新它们的取值
         for cent in range(k):
+            # 通过数据过滤来获取给定簇的所有点
             ptsInClust = dataMat[nonzero(clusterAssment[:, 0].A == cent)[0]]
+            # axis=0表示沿矩阵的列方向进行均值计算
             centroids[cent, :] = mean(ptsInClust, axis=0)
-
+    print(centroids)
+    # 返回所有的类质心与点的分配结果
     return centroids, clusterAssment
 
 def biKmeans(dataMat, k, distMeas=distEclud):
@@ -93,8 +98,18 @@ def biKmeans(dataMat, k, distMeas=distEclud):
                 bestClustAss = splitClustAss.copy()
                 lowestSSE = sseSplit + sseNotSplit
         #找出最好的簇分配结果
+        """
+        当k=2是k-means返回的是类别0，1两类，
+        因此这里讲类别为1的更改为其质心的长度(即新的簇类别序号)，而类别为0的返回的是该簇原先的类别。
+         举个例子：
+        例如：目前划分成了0，1
+        两个簇，而要求划分成3个簇，则在算法进行时，假设对1进行划分得到的SSE最小，则将1划分成了2个簇，其返回值为0，1
+        两个簇，将返回为1的簇改成2，返回为0的簇改成1，因此现在就有0，1，2
+        三个簇了。
+        """
         bestClustAss[nonzero(bestClustAss[:, 0].A ==1)[0], 0] = len(centList)
         bestClustAss[nonzero(bestClustAss[:, 0].A ==0)[0], 0] = bestCentToSplit
+        print(bestClustAss)
         print('the best Cent to Split:', bestCentToSplit)
         print('the len of bestClustAss is :', len(bestClustAss))
         centList[bestCentToSplit] = bestNewCents[0, :].tolist()[0]
@@ -102,7 +117,7 @@ def biKmeans(dataMat, k, distMeas=distEclud):
         clusterAssment[nonzero(clusterAssment[:, 0].A == bestCentToSplit)[0], :] = bestClustAss
     return mat(centList), clusterAssment
 
-import urllib
+import urllib.parse, urllib.request
 import json
 def geoGrab(stAddress, city):
     apiStem = 'http://where.yahooapis.com/geocode?'
@@ -110,11 +125,28 @@ def geoGrab(stAddress, city):
     params['flags'] = 'J'
     params['appid'] = 'ppp69N8t'
     params['location'] = '%s %s' % (stAddress, city)
-    url_params = urllib.urlencode(params)
+    url_params = urllib.parse.urlencode(params)
     yahooApi = apiStem + url_params
     print(yahooApi)
     c = urllib.request.urlopen(yahooApi)
     return json.loads(c.read())
+
+from time import sleep
+def massPlaceFind(fileName):
+    fw = open('places.txt', 'w')
+    for line in open(fileName).readlines():
+        line = line.strip()
+        lineArr = line.split('\t')
+        retDict = geoGrab(lineArr[1], lineArr[2])
+        if retDict['ResultSet']['Error'] == 0:
+            lat = float(retDict['ResultSet']['Results'][0]['latitude'])
+            lng = float(retDict['ResultSet']['Results'][0]['longitude'])
+            print("%s\t%f\t%f" % (lineArr[0], lat, lng))
+            fw.write('%s\t%f\t%f\n' % (line, lat, lng))
+        else:
+            print("error fetching")
+        sleep(1)
+    fw.close()
 
 def distSLC(vecA, vecB):
     """
@@ -152,13 +184,18 @@ def clusterClubs(fileName, imgName, numClust=5):
     ax1.scatter(myCentroids[:, 0].flatten().A[0], myCentroids[:, 1].flatten().A[0], marker='+', s=300)
     plt.show()
 
+if __name__ == '__main__':
 # Test for codes
-dataMat = mat(loadDataSet('testSet.txt'))
-print(randCent(dataMat, 2))
-print(distEclud(dataMat[0], dataMat[1]))
-myCentroids, clustAssing = kMeans(dataMat, 4)
-print(myCentroids)
-print(clustAssing)
+#     dataMat = mat(loadDataSet('testSet.txt'))
+#     print(randCent(dataMat, 2))
+#     print(distEclud(dataMat[0], dataMat[1]))
+#     myCentroids, clustAssing = kMeans(dataMat, 4)
+
+    dataMat3 = mat(loadDataSet('testSet2.txt'))
+    centList, myNewAssments = biKmeans(dataMat3, 3)
+    # print('centList:', centList)
+
+    print('New Assments:\n', myNewAssments)
 
 
 # KMeans sklearn
