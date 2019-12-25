@@ -19,6 +19,6 @@ if __name__ == '__main__':
     # dataMat3 = mat(kMeans.loadDataSet('../../../../data/k-means/testSet2.txt'))
     # centList, myNewAssments = kMeans.biKmeans(dataMat3, 3)
     # print('centList: \n', centList, '\n')
-    fileName = '../../../../data/k-means/places.txt'
+    fileName = '../../../../data/k-means/places_origin.txt'
     imgName = '../../../../data/k-means/Portland.png'
     kMeans.clusterClubs(fileName=fileName, imgName=imgName, numClust=5)

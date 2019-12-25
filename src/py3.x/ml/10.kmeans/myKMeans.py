@@ -190,14 +190,14 @@ if __name__ == '__main__':
 #     print(randCent(dataMat, 2))
 #     print(distEclud(dataMat[0], dataMat[1]))
 #     myCentroids, clustAssing = kMeans(dataMat, 4)
+#
+#     dataMat3 = mat(loadDataSet('testSet2.txt'))
+#     centList, myNewAssments = biKmeans(dataMat3, 3)
+#     # print('centList:', centList)
+#
+#     print('New Assments:\n', myNewAssments)
 
-    dataMat3 = mat(loadDataSet('testSet2.txt'))
-    centList, myNewAssments = biKmeans(dataMat3, 3)
-    # print('centList:', centList)
-
-    print('New Assments:\n', myNewAssments)
-
-
+    clusterClubs('places.txt', 'Portland.png')
 # KMeans sklearn
 # import numpy as np
 # from sklearn.cluster import KMeans
