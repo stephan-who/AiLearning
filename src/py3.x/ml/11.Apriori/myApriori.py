@@ -1,4 +1,6 @@
 from numpy import *
+from time import sleep
+from votesmart import votesmart
 
 def loadDataSet():
     return [[1, 3, 4], [2, 3, 5], [1, 2, 3, 5], [2, 5]]
@@ -15,7 +17,6 @@ def createC1(dataSet):
             if not [item] in C1:
                 # 遍历所有的元素，如果不在C1出现过，那么就append
                 C1.append([item])
-
     C1.sort()
     return map(frozenset, C1)
 
@@ -31,16 +32,18 @@ def scanD(D, Ck, minSupport):
     for tid in D:
         for can in Ck:
             if can.issubset(tid):
-                if not ssCnt.has_key(can):
+                if not (can in ssCnt):
                     ssCnt[can] = 1
                 else:
                     ssCnt[can] += 1
+
+    # print('ssCnt',ssCnt)
     numItems = float(len(D))
     retList = []
     supportData = {}
     for key in ssCnt:
         # 支持度 = 候选项（key） 出现的次数 / 所有数据集的数量
-        support = ssCnt[key]/numItems
+        support = ssCnt[key] / numItems
         if support >= minSupport:
             # 在retList的首位插入元素
             retList.insert(0, key)
@@ -56,6 +59,8 @@ def apriorGen(Lk, k):
     """
     retList = []
     lenLk = len(Lk)
+    print('L%d:' % (k-1))
+    print(Lk)
     for i in range(lenLk):
         for j in range(i+1, lenLk):
             L1 = list(Lk[i])[: k-2] # 前k-2个元素
@@ -73,15 +78,17 @@ def apriori(dataSet, minSupport=0.5):
     :param minSupport:
     :return:
     """
-    C1 = createC1(dataSet)
-    D = map(set, dataSet)
+    C1 = list(createC1(dataSet))
+    print('C1:', C1)
+    D = list(map(set, dataSet))
     L1, supportData = scanD(D, C1, minSupport)
-
     L = [L1]
     k = 2
     # 判断L的第k-2项的数据长度是否>0. 第一次执行时L为[[frozenset([1]), frozenset([3]), frozenset([2]), frozenset([5])]]. L[k-2] = L[0] = [frozenset([1]) frozenset([3]), frozenset([2]), frozenset([5])]],最后面k+=1
     while(len(L[k-2]) > 0):
         Ck = apriorGen(L[k-2], k)
+        print("apriorGen C%d:" % k)
+        print(Ck)
         Lk, supK = scanD(D, Ck, minSupport)
         # 保存所有候选项集的支持度，如果字典没有，就追加元素，如果有，就更新元素
         supportData.update(supK)
@@ -103,13 +110,18 @@ def calcConf(freqSet, H, supportData, brl, minConf=0.7):
     """
     prunedH = []
     for conseq in H:
+        # 假设freqSet = frozenset([1,3]),  H = [frozenset([1]), frozenset([3])]，
+        # 那么现在需要求出 frozenset([1]) -> frozenset([3]) 的可信度和 frozenset([3]) -> frozenset([1]) 的可信度
         """
         假设  freqSet = frozenset([1, 3]), conseq = [frozenset([1])]，那么 frozenset([1]) 至 frozenset([3]) 的可信度为 = support(a | b) / support(a) = supportData[freqSet]/supportData[freqSet-conseq] = supportData[frozenset([1, 3])] / supportData[frozenset([1])]
         """
+        # supportData[frozenset([1, 3])] / supportData[frozenset([1])]
         conf = supportData[freqSet]/supportData[freqSet-conseq]
+
         if conf >= minConf:
+            # 只要买了 freqSet-conseq 集合，一定会买 conseq 集合（freqSet-conseq 集合和 conseq集合 是全集）
             print(freqSet-conseq, '-->', conseq, 'conf:', conf)
-            brl.append(freqSet-conseq, conseq, conf)
+            brl.append((freqSet-conseq, conseq, conf))
             prunedH.append(conseq)
     return prunedH
 
@@ -137,7 +149,6 @@ def rulesFromConseq(freqSet, H, supportData, brl, minConf=0.7):
 
 def generateRules(L, supportData, minConf=0.7):
     """
-
     :param L:
     :param supportData:
     :param minConf:
@@ -153,3 +164,104 @@ def generateRules(L, supportData, minConf=0.7):
                 calcConf(freqSet, H1, supportData, bigRuleList, minConf)
 
     return bigRuleList
+
+def getActionIds():
+    votesmart.apikey= 'a7fa40adec6f4a77178799fae4441030'
+    actionIdList = []
+    billTitleList = []
+    fr = open('recent20bills.txt')
+    for line in fr.readlines():
+        billNum = int(line.split('\t')[0])
+        try:
+            billDetail = votesmart.votes.getBill(billNum)
+            for action in billDetail.actions:
+                if action.level == 'House' and (action.stage == 'Passage' or action.stage == 'Amendment Vote'):
+                    actionId = int(action.actionId)
+                    print('bill: %d has actionId %d' % (billNum, actionId))
+                    actionIdList.append(actionId)
+                    billTitleList.append(line.strip().split('\t')[1])
+        except:
+            print("problem getting bill %d" % billNum)
+        sleep(1)
+    return actionIdList, billTitleList
+
+def getTransList(actionIdList, billTitleList):
+    itemMeaning = ['Republican', 'Democratic']
+    for billTitle in billTitleList:
+        itemMeaning.append('%s -- Nay' % billTitle)
+        itemMeaning.append('%s -- Yea' % billTitle)
+    transDict = {}
+    voteCount = 2
+    for actionId in actionIdList:
+        sleep(3)
+        print('getting votes for actionId: %d' % actionId)
+        try:
+            voteList = votesmart.votes.getBillActionVotes(actionId)
+            for vote in voteList:
+                if vote.candidateName not in transDict:
+                    transDict[vote.candidateName] = []
+                    if vote.officeParties == 'Democratic':
+                        transDict[vote.candidateName].append(1)
+                    elif vote.officeParties == 'Republican':
+                        transDict[vote.candidateName].append(0)
+                if vote.action == 'Nay':
+                    transDict[vote.candidateName].append(voteCount)
+                elif vote.action == 'Yea':
+                    transDict[vote.candidateName].append(voteCount + 1)
+        except :
+            print('Problem getting actionId: %d' % actionId)
+        voteCount += 2
+    return transDict, itemMeaning
+
+
+def testApriori():
+    dataSet = loadDataSet()
+    print('dataSet:', dataSet)
+
+    L1, supportData1 = apriori(dataSet, minSupport=0.7)
+    print('L(0.7):', L1)
+    print('supportData(0.7):', supportData1)
+
+    print('->->->->->->')
+    L2, supportData2 = apriori(dataSet, minSupport=0.5)
+    print('L(0.5): ', L2)
+    print('supportData(0.5): ', supportData2)
+
+def testGenerateRules():
+    dataSet = loadDataSet()
+    print('dataSet:', dataSet)
+
+    L1, supportData1 = apriori(dataSet, minSupport=0.5)
+    print('L(0.7):', L1)
+    print('supportData(0.7):', supportData1)
+
+    rules = generateRules(L1, supportData1, minConf=0.5)
+    print('rules:', rules)
+
+def main():
+    # testApriori()
+    # testGenerateRules()
+
+    # 项目案例一：美国国会投票记录
+    actionIdList, billTitleList = getActionIds()
+    transDict, itemMeaning = getTransList(actionIdList[: 2], billTitleList[: 2])
+    # transDict, itemMeaning = getTransList(actionIdList, billTitleList)
+    dataSet = [transDict[key] for key in transDict.keys()]
+    L, supportData = apriori(dataSet, minSupport=0.3)
+    rules = generateRules(L, supportData, minConf=0.95)
+    print(rules)
+    #
+    # # 项目案例二：发现毒蘑菇的相似特性
+    # dataSet = [line.split() for line in open("mushroom.dat").readlines()]
+    # L, supportData = apriori(dataSet, minSupport=0.3)
+    # # 2 表示毒蘑菇，1表示可食用的蘑菇
+    # # 找出关于2的频繁子项出来，就知道如果是毒蘑菇，那么出现频繁的也可能是毒蘑菇
+    # for item in L[1]:
+    #     if item.intersection('2'):
+    #         print(item)
+    # for item in L[2]:
+    #     if item.intersection('2'):
+    #         print(item)
+
+if __name__=='__main__':
+    main()

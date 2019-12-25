@@ -9,7 +9,7 @@ Author: Peter/片刻
 GitHub: https://github.com/apachecn/AiLearning'''
 print(__doc__)
 from numpy import *
-
+from time import sleep
 # 加载数据集
 def loadDataSet():
     return [[1, 3, 4], [2, 3, 5], [1, 2, 3, 5], [2, 5]]
@@ -236,7 +236,7 @@ def generateRules(L, supportData, minConf=0.7):
 
 
 def getActionIds():
-    from time import sleep
+
     from votesmart import votesmart
     # votesmart.apikey = 'get your api key first'
     votesmart.apikey = 'a7fa40adec6f4a77178799fae4441030'
