@@ -319,7 +319,7 @@ if __name__ == "__main__":
     # 查询树节点的，频繁子项
     print('x --->', findPrefixPath('x', myHeaderTab['x'][1]))
     print('z --->', findPrefixPath('z', myHeaderTab['z'][1]))
-    print('r --->', findPrefixPath('r', myHeaderTab['r'][1]))
+    print('t --->', findPrefixPath('t', myHeaderTab['t'][1]))
 
     # 创建条件模式基
     freqItemList = []
@@ -336,10 +336,10 @@ if __name__ == "__main__":
     #     print(t)
 
     # # 2.新闻网站点击流中挖掘，例如：文章1阅读过的人，还阅读过什么？
-    # parsedDat = [line.split() for line in open('data/12.FPGrowth/kosarak.dat').readlines()]
-    # initSet = createInitSet(parsedDat)
-    # myFPtree, myHeaderTab = createTree(initSet, 100000)
+    parsedDat = [line.split() for line in open('data/12.FPGrowth/kosarak.dat').readlines()]
+    initSet = createInitSet(parsedDat)
+    myFPtree, myHeaderTab = createTree(initSet, 100000)
 
-    # myFreList = []
-    # mineTree(myFPtree, myHeaderTab, 100000, set([]), myFreList)
-    # print myFreList
+    myFreList = []
+    mineTree(myFPtree, myHeaderTab, 100000, set([]), myFreList)
+    print(myFreList)

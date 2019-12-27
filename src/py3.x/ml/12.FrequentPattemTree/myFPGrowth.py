@@ -57,16 +57,14 @@ def updateTree(items, inTree, headerTable, count):
         inTree.children[items[0]].inc(count)
     else:
         inTree.children[items[0]] = treeNode(items[0], count, inTree)
-
         if headerTable[items[0]][1] is None:
             headerTable[items[0]][1] = inTree.children[items[0]]
         else:
             updateHeader(headerTable[items[0]][1], inTree.children[items[0]])
     if len(items) > 1:
-        updateHeader(items[1:], inTree.children[items[0]], headerTable, count)
+        updateTree(items[1:], inTree.children[items[0]], headerTable, count)
 
 def createTree(dataSet, minSup=1):
-
 
     headerTable = {}
     for trans in dataSet:
@@ -101,12 +99,6 @@ def createTree(dataSet, minSup=1):
     return retTree, headerTable
 
 def ascendTree(leafNode, prefixPath):
-    """
-
-    :param leafNode:
-    :param prefixPath:
-    :return:
-    """
     if leafNode.parent is not None:
         prefixPath.append(leafNode.name)
         ascendTree(leafNode.parent, prefixPath)
@@ -116,7 +108,7 @@ def findPrefixPath(basePat, treeNode):
     while treeNode is not None:
         prefixPath = []
         ascendTree(treeNode, prefixPath)
-        if len(prefixPath) > 1:
+        if len(prefixPath)> 1:
             condPats[frozenset(prefixPath[1:])] = treeNode.count
         treeNode = treeNode.nodeLink
     return condPats
@@ -132,12 +124,45 @@ def mineTree(inTree, headerTable, minSup, preFix, freqItemList):
     :return:
     """
     bigL = [v[0] for v in sorted(headerTable.items(), key=lambda p:p[1][0])]
-    print('------', sorted(headerTable.items(), key=lambda  p:p[1][0]))
+    print('------', sorted(headerTable.items(), key=lambda p:p[1][0]))
     print('bigL=', bigL)
     for basePat in bigL:
         newFreqSet = preFix.copy()
         newFreqSet.add(basePat)
         print('newFreqSet=', newFreqSet, preFix)
-        freqItemList.append(newFreqSet)
 
-        
+        freqItemList.append(newFreqSet)
+        print('freqItemList=', freqItemList)
+        condPattBases = findPrefixPath(basePat, headerTable[basePat][1])
+        print('candPattBases=', basePat, condPattBases)
+
+        # 构建条件 FP Tree
+        myCondTree, myHead = createTree(condPattBases, minSup)
+        if myHead is not None:
+            myCondTree.disp(1)
+            print('\n\n\n')
+            mineTree(myCondTree, myHead, minSup, newFreqSet, freqItemList)
+        print('\n\n\n')
+
+if __name__ == '__main__':
+    simpDat = loadSimpDat()
+    initSet = createInitSet(simpDat)
+    print(initSet)
+    myFPtree, myHeaderTab = createTree(initSet, 3)
+    myFPtree.disp()
+    print(myHeaderTab)
+    print('x --->', findPrefixPath('x', myHeaderTab['x'][1]))
+    print('z --->', findPrefixPath('z', myHeaderTab['z'][1]))
+    print('t --->', findPrefixPath('t', myHeaderTab['t'][1]))
+
+    freqItemList = []
+    mineTree(myFPtree, myHeaderTab, 3, set([]), freqItemList)
+    print('freqItemList:\n', freqItemList)
+
+    parsedDat = [line.split() for line in open('kosarak.dat').readlines()]
+    initSet = createInitSet(parsedDat)
+    myFPtree, myHeaderTab = createTree(initSet, 100000)
+
+    myFreList = []
+    mineTree(myFPtree, myHeaderTab, 100000, set([]), myFreList)
+    print(myFreList)
